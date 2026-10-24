@@ -1,4 +1,4 @@
-// 月匣 · Moonbox
+// 文梦集 · Wenmeng
 // 环境变量：PORT(默认3000) / HOST(默认127.0.0.1) / DATA_DIR(默认./data)
 // 反向代理 HTTPS：TRUST_PROXY=1（让安全 Cookie 识别 X-Forwarded-Proto）
 // AI 覆盖：AI_BASE_URL / AI_API_KEY / AI_MODEL
@@ -138,7 +138,7 @@ function openBrowser(url) {
 
 function listen(port) {
   const server = app.listen(port, HOST, () => {
-    console.log('\n  💕 月匣已启动');
+    console.log('\n  💕 文梦集已启动');
     console.log('  本机访问:  http://localhost:' + port);
     if (HOST === '0.0.0.0') {
       console.log('  局域网/服务器: 用本机 IP 访问同一端口（手机同 WiFi 可打开）');

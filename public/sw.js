@@ -1,4 +1,4 @@
-// 月匣 Service Worker v3：网络优先（更新即时生效），离线时回退缓存
+// 文梦集 Service Worker v3：网络优先（更新即时生效），离线时回退缓存
 // API 与媒体永远走网络
 const CACHE = 'moonbox-v3';
 

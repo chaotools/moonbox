@@ -90,7 +90,7 @@ function applyConfig(config) {
   const nextSubjectLabel = subjectLabel();
   const subjectChanged = routerReady && lastSubjectLabel !== nextSubjectLabel;
   lastSubjectLabel = nextSubjectLabel;
-  const title = config.title || '月匣';
+  const title = config.title || '文梦集';
   $('toolbarTitle').textContent = title;
   $('heroTitle').textContent = title;
   document.title = title;

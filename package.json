@@ -1,7 +1,7 @@
 {
   "name": "moonbox",
-  "version": "3.0.0",
-  "description": "月匣 —— 私人的文字与照片记忆库",
+  "version": "3.0.1",
+  "description": "文梦集 —— 私人的文字与照片记忆库",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

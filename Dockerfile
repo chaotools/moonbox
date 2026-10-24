@@ -1,4 +1,4 @@
-# 月匣 · Moonbox
+# 文梦集 · Wenmeng
 # 任意服务器可复现：docker build -t moonbox . && docker compose up -d
 FROM node:20-bookworm-slim
 
