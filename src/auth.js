@@ -1,4 +1,4 @@
-// 月匣 身份边界：网页会话来自小程序扫码，服务端代理必须同时提供用户 ID。
+// 文梦集 身份边界：网页会话来自小程序扫码，服务端代理必须同时提供用户 ID。
 const express = require('express');
 const crypto = require('crypto');
 const QRCode = require('qrcode');

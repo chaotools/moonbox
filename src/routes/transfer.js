@@ -77,7 +77,7 @@ function mediaDestination(entryPath) {
     const prefix = dir + '/';
     if (!normalized.startsWith(prefix)) continue;
     const name = normalized.slice(prefix.length);
-    // 月匣 媒体目录是扁平布局；拒绝子目录与路径穿越。
+    // 文梦集 媒体目录是扁平布局；拒绝子目录与路径穿越。
     if (!name || name !== path.basename(name) || name.includes('\0')) throw new Error(`备份包含非法媒体路径: ${normalized}`);
     const ext = media.extOf(name);
     if (dir === 'media' && !(IMAGE_EXT.has(ext) || media.VIDEO_EXT.has(ext))) throw new Error(`备份包含不支持的媒体类型: ${name}`);

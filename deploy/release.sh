@@ -37,5 +37,5 @@ for _ in {1..20}; do
   sleep 3
 done
 
-echo '月匣 health check timed out.' >&2
+echo '文梦集 health check timed out.' >&2
 exit 1

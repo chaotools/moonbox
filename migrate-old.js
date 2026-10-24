@@ -50,7 +50,7 @@ async function main() {
   try {
     const oldCfg = JSON.parse(await fsp.readFile(oldConfigFile, 'utf8'));
     const newCfg = {
-      title: oldCfg.title || '月匣',
+      title: oldCfg.title || '文梦集',
       names: oldCfg.names || '',
       anniversary: oldCfg.anniversary || '',
       music: oldCfg.music || '',
