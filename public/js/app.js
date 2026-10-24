@@ -95,6 +95,8 @@ function applyConfig(config) {
   $('heroTitle').textContent = title;
   document.title = title;
   $('heroNames').textContent = config.names || '';
+  if ($('sideTitle')) $('sideTitle').textContent = title;
+  if ($('sideNames')) $('sideNames').textContent = config.names || '把重要的日子，放在这里';
   const profileNav = document.querySelector('[data-route="profile"]');
   if (profileNav) profileNav.textContent = nextSubjectLabel + '档案';
   $('daysBox').hidden = !config.anniversary;
@@ -120,6 +122,8 @@ function renderDays() {
   const s = Math.floor((diff % 60000) / 1000);
   $('daysNum').textContent = days;
   $('daysTime').textContent = `${pad(h)} 时 ${pad(m)} 分 ${pad(s)} 秒`;
+  if ($('sideDays')) $('sideDays').textContent = days;
+  if ($('sideTime')) $('sideTime').textContent = `${pad(h)} 时 ${pad(m)} 分 ${pad(s)} 秒`;
 }
 
 function renderChips() {
@@ -146,16 +150,26 @@ async function renderBanners() {
     const r = await get('/api/reminders?days=30');
     const icons = { birthday: '🎂', period: '🌸', milestone: '🎉', memorial: '💘' };
     const cls = (it) => it.type === 'birthday' ? 'banner cake' : it.type === 'period' ? 'banner period' : 'banner';
-    const rows = (r.items || [])
-      .filter((it) => it.inDays >= 0 || it.active)
-      .map((it) => {
-        // active：正在进行中的状态（如经期中），不显示倒计时
-        const when = it.active ? '' : (it.inDays === 0 ? '就是今天！' : `还有 ${it.inDays} 天`);
-        return el('div', { class: cls(it), text: '' },
-          icons[it.type] || '💘',
-          el('span', null, it.title + (it.sub ? ` · ${it.sub}` : ''), el('b', { text: ' ' + when })));
-      });
+    const items = (r.items || []).filter((it) => it.inDays >= 0 || it.active);
+    const rows = items.map((it) => {
+      // active：正在进行中的状态（如经期中），不显示倒计时
+      const when = it.active ? '' : (it.inDays === 0 ? '就是今天！' : `还有 ${it.inDays} 天`);
+      return el('div', { class: cls(it), text: '' },
+        icons[it.type] || '💘',
+        el('span', null, it.title + (it.sub ? ` · ${it.sub}` : ''), el('b', { text: ' ' + when })));
+    });
     rows.forEach((b) => box.append(b));
+    const side = $('sideReminders');
+    if (side) {
+      side.innerHTML = '';
+      items.slice(0, 3).forEach((it) => {
+        const when = it.active ? '正在进行中' : (it.inDays === 0 ? '就是今天' : `还有 ${it.inDays} 天`);
+        side.append(el('div', { class: 'side-reminder' },
+          el('span', { class: 'side-reminder-icon', text: icons[it.type] || '♡' }),
+          el('div', null, el('b', { text: it.title }), el('small', { text: when }))));
+      });
+      if (!items.length) side.append(el('p', { class: 'side-empty', text: '最近没有新的提醒' }));
+    }
 
     // 记录活跃提醒（最近记录 / 连续天数）
     const act = r.activity;
@@ -407,6 +421,8 @@ function initGlobalSearch() {
 
 /* ---------- 随手记 ---------- */
 function initQuickNote() {
+  const sideQuick = $('sideQuickNote');
+  if (sideQuick) sideQuick.addEventListener('click', () => $('quickNoteBtn').click());
   $('quickNoteBtn').addEventListener('click', () => {
     const kind = select([
       ['event', '大事记 · 刚发生的事'],

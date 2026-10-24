@@ -77,6 +77,29 @@
     <a href="#/ask" data-route="ask" id="navAsk" hidden>AI问答</a>
   </nav>
 
+  <div class="workspace">
+    <aside class="side-rail" aria-label="关系概览">
+      <section class="side-profile">
+        <div class="side-profile-main">
+          <div class="side-avatar">💑</div>
+          <div class="side-profile-copy">
+            <div class="side-kicker">PRIVATE MEMORY ARCHIVE</div>
+            <h2 id="sideTitle">文梦集</h2>
+            <p id="sideNames">把重要的日子，放在这里</p>
+          </div>
+        </div>
+        <div class="side-days">
+          <div><strong id="sideDays">--</strong><span>在 一 起</span></div>
+          <em id="sideTime"></em>
+        </div>
+      </section>
+      <button type="button" class="side-quick" id="sideQuickNote"><span>今天发生了什么？</span><b>记一笔</b></button>
+      <section class="side-upcoming">
+        <h3>接下来的日子</h3>
+        <div id="sideReminders"><p class="side-empty">正在读取提醒…</p></div>
+      </section>
+    </aside>
+    <div class="workspace-main">
   <!-- 首屏（仅时间轴页显示） -->
   <section class="hero" id="hero" hidden>
     <div class="hearts" id="hearts"></div>
@@ -97,6 +120,8 @@
 
   <!-- 视图容器 -->
   <main id="view" tabindex="-1"></main>
+    </div>
+  </div>
 
   <!-- 灯箱 -->
   <div class="lightbox" id="lightbox" hidden>
