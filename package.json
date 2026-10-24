@@ -1,6 +1,6 @@
 {
   "name": "moonbox",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "文梦集 —— 私人的文字与照片记忆库",
   "main": "server.js",
   "scripts": {

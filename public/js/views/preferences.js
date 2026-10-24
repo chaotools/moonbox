@@ -20,12 +20,24 @@ export async function render(container, params) {
 function build() {
   viewEl.innerHTML = '';
   const page = el('div', { class: 'page' });
+  const subject = subjectLabel();
+  const likeCount = prefs.filter((p) => p.polarity === '喜欢').length;
+  const dislikeCount = prefs.filter((p) => p.polarity === '不喜欢').length;
 
   page.append(el('div', { class: 'page-head' },
     el('div', null,
-      el('div', { class: 'page-title', text: '💗 偏好' }),
-      el('div', { class: 'page-desc', text: '爱吃什么、讨厌什么、口味尺寸颜色……点餐送礼不踩雷' })),
+      el('div', { class: 'page-title', text: '偏好' }),
+      el('div', { class: 'page-desc', text: '记住她喜欢的，也记住她不太喜欢的。' })),
     el('button', { class: 'primary-btn', text: '＋ 记一条', onclick: () => editItem(null) })));
+
+  page.append(el('section', { class: 'pref-summary' },
+    el('div', null,
+      el('div', { class: 'pref-summary-kicker', text: `${subject}的偏好画像` }),
+      el('h2', { text: '喜欢被记住的小事' }),
+      el('p', { text: '偏好不是标签，是下次点单、挑礼物和安排周末时，少问一句的小默契。' })),
+    el('div', { class: 'pref-summary-count' },
+      el('strong', { text: String(prefs.length) }),
+      el('span', { text: `${likeCount} 喜欢 · ${dislikeCount} 不喜欢` }))));
 
   const seg = el('div', { class: 'seg' },
     el('button', { 'data-c': 'all', class: filterCat === 'all' ? 'active' : '', text: '全部' }),
@@ -48,36 +60,35 @@ function buildColumns() {
   if (!cols) return;
   cols.innerHTML = '';
   const shown = prefs.filter((p) => filterCat === 'all' || p.category === filterCat);
-
   const subject = subjectLabel();
-  for (const [polarity, cls, icon, title] of [['喜欢', 'like', '💗', `${subject} 喜欢`], ['不喜欢', 'dislike', '🙅', `${subject} 不喜欢`]]) {
+  const icons = { '吃': '🍽', '喝': '🥛', '穿': '🧶', '用': '🧴', '玩': '🎞', '其他': '✦' };
+
+  for (const [polarity, cls, icon, title] of [['喜欢', 'like', '💗', `${subject} 喜欢`], ['不喜欢', 'dislike', '🙅', `${subject} 不太喜欢`]]) {
     const items = shown.filter((p) => p.polarity === polarity);
     const col = el('div', { class: 'pref-col ' + cls },
-      el('h3', null, `${icon} ${title}`, el('span', { style: 'font-size:12px;color:var(--muted)', text: items.length + ' 条' })));
-    if (!items.length) {
-      col.append(el('p', { style: 'font-size:13px;color:var(--muted);padding:10px 0', text: '还空着，点右上「＋ 记一条」补上吧' }));
+      el('div', { class: 'pref-col-head' },
+        el('h3', null, `${icon} ${title}`),
+        el('span', { class: 'pref-count', text: items.length + ' 条' })));
+    const rows = el('div', { class: 'pref-rows' });
+    if (!items.length) rows.append(el('p', { class: 'pref-empty', text: '还空着，点右上「＋ 记一条」补上吧' }));
+    for (const p of items) {
+      rows.append(el('div', { class: 'pref-row', onclick: () => editItem(p) },
+        el('div', { class: 'pref-row-icon', text: icons[p.category] || '✦' }),
+        el('div', { class: 'pref-row-copy' },
+          el('b', null, p.title, p.createdBy === 'ai' ? el('span', { class: 'record-origin', text: 'AI 记录' }) : null),
+          p.detail ? el('small', { text: p.detail }) : null),
+        el('span', { class: 'pref-cat', text: p.category }),
+        el('button', {
+          class: 'pi-del', text: '✕', onclick: async (e) => {
+            e.stopPropagation();
+            if (!confirm(`删除「${p.title}」？`)) return;
+            await del('/api/preferences/' + p.id);
+            prefs = prefs.filter((x) => x.id !== p.id);
+            build(); toast('已删除');
+          }
+        })));
     }
-    for (const cat of CATEGORIES) {
-      const group = items.filter((p) => p.category === cat);
-      if (!group.length) continue;
-      col.append(el('div', { class: 'pref-cat', text: '· ' + cat + ' ·' }));
-      for (const p of group) {
-        col.append(el('div', { class: 'pref-item', onclick: () => editItem(p) },
-          el('div', null,
-            el('div', { class: 'pi-title' }, p.title,
-              p.createdBy === 'ai' ? el('span', { class: 'record-origin', text: 'AI 记录' }) : null),
-            p.detail ? el('div', { class: 'pi-detail', text: p.detail }) : null),
-          el('button', {
-            class: 'pi-del', text: '✕', onclick: async (e) => {
-              e.stopPropagation();
-              if (!confirm(`删除「${p.title}」？`)) return;
-              await del('/api/preferences/' + p.id);
-              prefs = prefs.filter((x) => x.id !== p.id);
-              buildColumns(); toast('已删除');
-            }
-          })));
-      }
-    }
+    col.append(rows);
     cols.append(col);
   }
 }
