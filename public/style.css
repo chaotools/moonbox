@@ -1561,3 +1561,24 @@ body::before { background: var(--bg); }
 .trash-actions .ghost-btn { padding: 5px 7px; font-size: 10px; }
 .trash-actions .danger { color: var(--danger); }
 @media (max-width: 620px) { .undo-bar { right: 14px; left: 14px; min-width: 0; transform: none; } @keyframes undo-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } }
+
+/* ===== 一级导航分组 ===== */
+.nav { overflow: visible; }
+.nav-group { position: relative; flex: 0 0 auto; }
+.nav-group-btn { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--ink-light); padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .2s ease, color .2s ease; }
+.nav-group-btn:hover { background: var(--rose-soft); color: var(--rose-dark); }
+.nav-group.active .nav-group-btn { background: var(--rose); color: #fff; }
+.nav-group.open .nav-group-btn { background: var(--rose-soft); color: var(--rose-dark); }
+.nav-caret { display: inline-block; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: .65; transition: transform .2s ease; }
+.nav-group.open .nav-caret { transform: rotate(180deg); }
+.nav-menu { position: absolute; top: calc(100% + 9px); left: 0; z-index: 70; min-width: 154px; padding: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: var(--shadow-lg); }
+.nav-group:last-child .nav-menu { left: auto; right: 0; }
+.nav-menu a { display: block; padding: 9px 12px; border-radius: 8px; color: var(--ink-light); font-size: 12px; text-decoration: none; white-space: nowrap; }
+.nav-menu a:hover { background: var(--blush); color: var(--rose-dark); }
+.nav-menu a.active { background: var(--rose-soft); color: var(--rose-deep); font-weight: 600; }
+@media (max-width: 620px) {
+  .nav-heading { display: none; }
+  .nav { padding: 0 12px; gap: 2px; }
+  .nav-group-btn { padding: 6px 10px; font-size: 12px; }
+  .nav-menu { min-width: 138px; }
+}

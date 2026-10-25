@@ -51,3 +51,15 @@ test('上传失败会自动重试并保留待上传文件', () => {
   assert.match(source, /网络波动，正在自动重试/);
   assert.match(source, /重新上传 \$\{pending\.length\} 个文件/);
 });
+
+test('一级导航按记录、关系、计划、洞察分组', () => {
+  const html = read('public/index.html');
+  const app = read('public/js/app.js');
+  assert.match(html, /data-nav-group="record"/);
+  assert.match(html, /data-nav-group="relationship"/);
+  assert.match(html, /data-nav-group="plan"/);
+  assert.match(html, /data-nav-group="insight"/);
+  assert.match(html, /class="nav-group-btn"/);
+  assert.match(app, /function initNavMenus\(\)/);
+  assert.match(app, /group\.classList\.toggle\('active'/);
+});
