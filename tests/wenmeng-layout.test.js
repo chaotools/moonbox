@@ -43,3 +43,11 @@ test('时间轴接入收藏、回收站和删除撤销', () => {
   assert.match(source, /async function openTrash\(\)/);
   assert.match(source, /showUndo\('已移入回收站'/);
 });
+
+test('上传失败会自动重试并保留待上传文件', () => {
+  const source = read('public/js/views/timeline.js');
+  assert.match(source, /let retryCount = 0/);
+  assert.match(source, /failUpload\('网络错误', true\)/);
+  assert.match(source, /网络波动，正在自动重试/);
+  assert.match(source, /重新上传 \$\{pending\.length\} 个文件/);
+});
