@@ -3,6 +3,7 @@ import { el, get, post, toast, store, openModal, field, input, select, initLight
 import { lunarDateText, nextOccurrence, daysUntil } from './lunar.js';
 import { shouldStartWebLogin, authScopeFromStatus } from './auth-state.mjs';
 import { initializeChatHistoryStorage } from './chat-history.mjs';
+import * as today from './views/today.js';
 import * as timeline from './views/timeline.js';
 import * as profile from './views/profile.js';
 import * as preferences from './views/preferences.js';
@@ -15,7 +16,7 @@ import * as mapView from './views/map.js';
 import * as askView from './views/ask.js';
 
 const VIEWS = {
-  timeline, profile, preferences, people: peopleView, events: eventsView, map: mapView, wishes: wishesView, stats: statsView, calendar: calendarView, ask: askView
+  today, timeline, profile, preferences, people: peopleView, events: eventsView, map: mapView, wishes: wishesView, stats: statsView, calendar: calendarView, ask: askView
 };
 let activeView = null;
 let routerReady = false;
@@ -329,7 +330,7 @@ function initRouter() {
   router();
 }
 function router() {
-  const raw = location.hash.replace('#/', '') || 'timeline';
+  const raw = location.hash.replace('#/', '') || 'today';
   const [routeName, query] = raw.split('?');
   const params = {};
   if (query) for (const [k, v] of new URLSearchParams(query)) params[k] = v;

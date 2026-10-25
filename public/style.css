@@ -1482,3 +1482,61 @@ body::before { background: var(--bg); }
 .pref-row:hover { background: var(--bg); }
 .pref-row:hover .pi-del { opacity: 1; }
 .pref-row .pi-del { opacity: .35; transition: opacity .15s; }
+
+/* ===== 今天 ===== */
+.today-actions { display: flex; gap: 8px; align-items: center; }
+.today-hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 14px; padding: 24px; border: 1px solid var(--border); border-radius: 18px; background: linear-gradient(120deg, var(--blush) 0%, var(--card) 74%); box-shadow: var(--shadow-card); }
+.today-hero .eyebrow { color: var(--rose-deep); }
+.today-hero h2 { margin: 9px 0 5px; font-family: var(--serif); font-size: clamp(21px, 2.4vw, 28px); font-weight: 500; }
+.today-hero p { margin: 0; color: var(--muted); font-size: 12px; }
+.today-hero-count { min-width: 82px; text-align: center; }
+.today-hero-count strong { display: block; color: var(--rose); font-family: Georgia, serif; font-size: 42px; font-weight: 500; line-height: 1; }
+.today-hero-count span { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; }
+.today-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.today-card { min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); box-shadow: var(--shadow-card); }
+.today-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.today-card-kicker { color: var(--rose-deep); font-size: 9px; font-weight: 700; letter-spacing: .16em; }
+.today-card h3 { margin: 5px 0 0; font-family: var(--serif); font-size: 18px; font-weight: 500; }
+.today-count { color: var(--muted); font-size: 10px; }
+.today-muted { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.today-mini-list { display: grid; gap: 8px; }
+.today-memory { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 8px; border-radius: 11px; cursor: pointer; transition: background .15s; }
+.today-memory:hover { background: var(--bg); }
+.today-memory.highlight { padding: 10px; background: var(--bg); }
+.today-memory-thumb { width: 52px; height: 52px; flex: 0 0 auto; overflow: hidden; border-radius: 10px; background: var(--rose-soft); }
+.today-thumb-img { width: 52px; height: 52px; object-fit: cover; border-radius: 10px; }
+.today-memory-copy { min-width: 0; flex: 1; }
+.today-memory-copy b { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.today-memory-copy span { display: block; overflow: hidden; margin-top: 4px; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.today-live { display: inline-block; margin-top: 5px; padding: 2px 6px; border-radius: 5px; background: var(--rose); color: #fff; font-size: 8px; font-style: normal; letter-spacing: .08em; }
+.today-section { margin-top: 14px; }
+.today-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 2px 9px; }
+.today-section-head h3 { margin: 0; font-family: var(--serif); font-size: 19px; font-weight: 500; }
+.today-recent { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.today-recent-item { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: var(--card); box-shadow: var(--shadow-sm); cursor: pointer; }
+.today-recent-item.event { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 14px; }
+.today-recent-thumb { width: 100%; height: 100px; object-fit: cover; display: block; }
+.today-recent-copy { min-width: 0; padding: 10px 12px 12px; }
+.today-recent-copy b { display: block; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.today-recent-copy small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+.today-recent-icon { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 9px; background: var(--rose-soft); color: var(--rose-deep); }
+.today-recent-item.event b { display: block; font-size: 11px; }
+.today-recent-item.event small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+.today-reminders { display: grid; gap: 0; }
+.today-reminder { display: flex; align-items: flex-start; gap: 10px; padding: 11px 2px; border-top: 1px solid var(--border); }
+.today-reminder:first-child { border-top: 0; padding-top: 0; }
+.today-reminder-icon { width: 26px; flex: 0 0 26px; text-align: center; font-size: 16px; }
+.today-reminder b { display: block; font-size: 11px; font-weight: 600; }
+.today-reminder small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+@media (max-width: 900px) {
+  .today-grid { grid-template-columns: 1fr; }
+  .today-recent { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 620px) {
+  .today-actions { width: 100%; }
+  .today-actions .primary-btn, .today-actions .ghost-btn { flex: 1; }
+  .today-hero { align-items: flex-start; padding: 18px; }
+  .today-hero-count strong { font-size: 34px; }
+  .today-recent { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .today-recent-thumb { height: 92px; }
+}

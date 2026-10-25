@@ -24,3 +24,14 @@ test('偏好页使用画像摘要和可点击的双栏清单', () => {
   assert.match(source, /class: 'pref-row-icon'/);
   assert.doesNotMatch(source, /class: 'pref-cat', text: '· '/);
 });
+test('今天首页接入路由并包含旧日与随机回忆', () => {
+  const html = read('public/index.html');
+  const app = read('public/js/app.js');
+  const today = read('public/js/views/today.js');
+  assert.match(html, /data-route="today"/);
+  assert.match(app, /import \* as today/);
+  assert.match(app, /const raw = location\.hash\.replace\('#\/', ''\) \|\| 'today'/);
+  assert.match(today, /过去的今天/);
+  assert.match(today, /随机翻到这一页/);
+  assert.match(today, /最近的记忆/);
+});
