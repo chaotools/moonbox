@@ -9,7 +9,7 @@ function snapshotVault(vault) {
     wishes: vault.wishes.list(),
     gifts: vault.gifts.list(),
     albums: vault.albums.list(),
-    memories: vault.memories.list().slice().sort((a, b) => (b.takenAt || '').localeCompare(a.takenAt || ''))
+    memories: vault.memories.list().filter((m) => !m.deletedAt).slice().sort((a, b) => (b.takenAt || '').localeCompare(a.takenAt || ''))
   };
 }
 

@@ -22,6 +22,7 @@ async function withApp(app, run) {
 
 function appFor(collection, vault) {
   const app = express();
+  app.use(express.json());
   app.use((req, res, next) => { req.vault = vault; next(); });
   app.use('/', content.memoriesRouter(() => collection).router);
   app.use((err, req, res, next) => { res.status(err.status || 400).json({ error: err.message }); });
@@ -166,4 +167,46 @@ test('媒体上传限制与请求体前置守卫一致', () => {
   assert.equal(nextCalled, false);
   assert.equal(statusCode, 413);
   assert.match(body.error, /1 GB/);
+});
+
+test('照片支持收藏、移入回收站和恢复', async () => {
+  const root = await fsp.mkdtemp(path.join(os.tmpdir(), 'moonbox-memory-trash-'));
+  try {
+    const vault = { mediaDir: path.join(root, 'media'), thumbDir: path.join(root, 'thumbs') };
+    await fsp.mkdir(vault.mediaDir, { recursive: true });
+    await fsp.mkdir(vault.thumbDir, { recursive: true });
+    const items = [{ id: 'memory-1', filename: 'memory-1.jpg', type: 'photo', takenAt: '2026-10-24T00:00:00.000Z' }];
+    const collection = {
+      list: () => items,
+      get: (id) => items.find((item) => item.id === id) || null,
+      update: async (id, patch) => { const item = items.find((x) => x.id === id); Object.assign(item, patch); return item; },
+      remove: async (id) => { const index = items.findIndex((item) => item.id === id); if (index < 0) return false; items.splice(index, 1); return true; },
+      store: { save: async () => {} }
+    };
+
+    await withApp(appFor(collection, vault), async (origin) => {
+      const favorite = await fetch(origin + '/memory-1', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ favorite: true }) });
+      assert.equal(favorite.status, 200);
+      assert.equal((await favorite.json()).favorite, true);
+
+      const removed = await fetch(origin + '/memory-1', { method: 'DELETE' });
+      assert.equal(removed.status, 200);
+      assert.ok((await removed.json()).deletedAt);
+      assert.deepEqual(await fetch(origin + '/').then((response) => response.json()), []);
+
+      const trash = await fetch(origin + '/?trash=1').then((response) => response.json());
+      assert.equal(trash.length, 1);
+      assert.equal(trash[0].favorite, true);
+
+      const restored = await fetch(origin + '/memory-1/restore', { method: 'POST' });
+      assert.equal(restored.status, 200);
+      assert.equal((await restored.json()).deletedAt, null);
+      assert.equal((await fetch(origin + '/').then((response) => response.json())).length, 1);
+
+      assert.equal((await fetch(origin + '/memory-1?permanent=1', { method: 'DELETE' })).status, 200);
+      assert.equal((await fetch(origin + '/?trash=1').then((response) => response.json())).length, 0);
+    });
+  } finally {
+    await fsp.rm(root, { recursive: true, force: true });
+  }
 });

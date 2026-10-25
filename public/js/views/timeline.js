@@ -6,7 +6,7 @@ import { sortTimelineItems, groupTimelineByMonth } from '../timeline-order.mjs';
 let memories = [];
 let events = [];
 let albums = [];
-let filter = { type: 'all', year: 'all', album: 'all' };
+let filter = { type: 'all', year: 'all', album: 'all', favorite: false };
 let viewEl = null;
 
 export async function render(container, params) {
@@ -80,12 +80,18 @@ function build() {
       return b;
     };
     albumChips.append(pick('all', '全部', '📁'), pick('none', '未分组', '🗂'));
+    albumChips.append(el('button', {
+      class: 'album-chip favorite-chip' + (filter.favorite ? ' active' : ''),
+      text: '★ 收藏',
+      onclick: () => { filter.favorite = !filter.favorite; renderAlbumChips(); buildList(); }
+    }));
     for (const a of albums) {
       const n = memories.filter((m) => m.albumId === a.id).length;
       albumChips.append(pick(a.id, `${a.name} ${n}`, '💗'));
     }
     albumChips.append(el('button', { class: 'album-chip add', text: '＋ 新建相册', onclick: createAlbum }));
     if (albums.length) albumChips.append(el('button', { class: 'album-chip manage', text: '管理', onclick: manageAlbums }));
+    albumChips.append(el('button', { class: 'album-chip trash-chip', text: '♻ 回收站', onclick: openTrash }));
   };
   renderAlbumChips();
 
@@ -137,6 +143,7 @@ function buildList() {
       if (it.kind !== 'media') return false;
       if (filter.album === 'none' ? it.m.albumId : it.m.albumId !== filter.album) return false;
     }
+    if (filter.favorite && !(it.kind === 'media' && it.m.favorite)) return false;
     if (filter.year !== 'all' && String(new Date(it.date).getFullYear()) !== filter.year) return false;
     return true;
   });
@@ -182,7 +189,28 @@ function mediaCard(m) {
     children.push(el('div', { class: 'video-badge live-badge', text: '● LIVE' }));
   }
   children.push(cap);
-  const card = el('figure', { class: 'card' }, ...children);
+  const card = el('figure', { class: 'card' + (m.favorite ? ' favorite' : '') }, ...children);
+  const favoriteBtn = el('button', {
+    class: 'favorite-btn' + (m.favorite ? ' active' : ''),
+    type: 'button',
+    text: m.favorite ? '★' : '☆',
+    title: m.favorite ? '取消收藏' : '收藏这张记忆',
+    'aria-label': m.favorite ? '取消收藏' : '收藏这张记忆',
+    onclick: async (e) => {
+      e.stopPropagation();
+      try {
+        const updated = await patch('/api/memories/' + m.id, { favorite: !m.favorite });
+        Object.assign(m, updated);
+        favoriteBtn.textContent = m.favorite ? '★' : '☆';
+        favoriteBtn.classList.toggle('active', Boolean(m.favorite));
+        favoriteBtn.title = m.favorite ? '取消收藏' : '收藏这张记忆';
+        favoriteBtn.setAttribute('aria-label', favoriteBtn.title);
+        card.classList.toggle('favorite', Boolean(m.favorite));
+        toast(m.favorite ? '已收藏' : '已取消收藏');
+      } catch (err) { toast(err.message, 'err'); }
+    }
+  });
+  card.append(favoriteBtn);
   card.addEventListener('click', () => openMediaLightbox(m));
   return card;
 }
@@ -223,13 +251,56 @@ function editMemory(m) {
 }
 
 async function deleteMemory(m) {
-  if (!confirm('确定删除这段记忆吗？文件会被永久删除。')) return;
+  if (!confirm('确定把这段记忆移入回收站吗？')) return;
   try {
     await del('/api/memories/' + m.id);
     memories = memories.filter((x) => x.id !== m.id);
     closeLightboxSafe();
-    buildList(); toast('已删除');
+    buildList();
+    showUndo('已移入回收站', async () => {
+      await post('/api/memories/' + m.id + '/restore');
+      memories = await get('/api/memories');
+      buildList();
+      toast('已恢复');
+    });
   } catch (e) { toast(e.message, 'err'); }
+}
+
+async function openTrash() {
+  try {
+    const trash = await get('/api/memories?trash=1');
+    const body = el('div', { class: 'trash-list' });
+    if (!trash.length) body.append(emptyState('♻️', '回收站是空的。删除的照片会先放在这里。'));
+    for (const m of trash) {
+      const row = el('div', { class: 'trash-row' },
+        mediaPreview(m, { className: 'trash-thumb', alt: m.note || '' }),
+        el('div', { class: 'trash-copy' },
+          el('b', { text: m.note || '一张照片' }),
+          el('span', { text: '删除于 ' + fmtDate(m.deletedAt) })),
+        el('div', { class: 'trash-actions' },
+          el('button', { class: 'ghost-btn', text: '恢复', onclick: async () => {
+            try { await post('/api/memories/' + m.id + '/restore'); md.close(); memories = await get('/api/memories'); buildList(); toast('已恢复'); }
+            catch (e) { toast(e.message, 'err'); }
+          } }),
+          el('button', { class: 'ghost-btn danger', text: '彻底删除', onclick: async () => {
+            if (!confirm('彻底删除后无法恢复，确定吗？')) return;
+            try { await del('/api/memories/' + m.id + '?permanent=1'); md.close(); await openTrash(); toast('已彻底删除'); }
+            catch (e) { toast(e.message, 'err'); }
+          } })));
+      body.append(row);
+    }
+    const md = openModal({ title: '回收站', content: body, buttons: [{ el: el('button', { class: 'ghost-btn', text: '关闭', onclick: () => md.close() }) }] });
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function showUndo(message, onUndo) {
+  const old = document.getElementById('undoBar');
+  if (old) old.remove();
+  const bar = el('div', { id: 'undoBar', class: 'undo-bar' },
+    el('span', { text: message }),
+    el('button', { type: 'button', text: '撤销', onclick: async () => { bar.remove(); await onUndo(); } }));
+  document.body.append(bar);
+  setTimeout(() => bar.remove(), 8000);
 }
 function closeLightboxSafe() {
   const lb = document.getElementById('lightbox');

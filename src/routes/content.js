@@ -320,9 +320,13 @@ function memoriesRouter(collection) {
   });
 
   r.get('/', async (req, res) => {
+    const trash = req.query.trash === '1';
     const items = resolve(req).list()
+      .filter((m) => Boolean(m.deletedAt) === trash)
       .slice()
-      .sort((a, b) => (b.takenAt || '').localeCompare(a.takenAt || ''));
+      .sort((a, b) => trash
+        ? (b.deletedAt || '').localeCompare(a.deletedAt || '')
+        : (b.takenAt || '').localeCompare(a.takenAt || ''));
     res.json(await Promise.all(items.map((m) => publicMem(req, m))));
   });
 
@@ -410,6 +414,7 @@ function memoriesRouter(collection) {
     const b = req.body || {};
     if (typeof b.note === 'string') mem.note = b.note.trim();
     if (typeof b.location === 'string') mem.location = b.location.trim();
+    if (typeof b.favorite === 'boolean') mem.favorite = b.favorite;
     if (typeof b.eventId === 'string' || b.eventId === null) mem.eventId = b.eventId;
     if (typeof b.albumId === 'string' || b.albumId === null) mem.albumId = b.albumId;
     if (Array.isArray(b.tags)) mem.tags = b.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim());
@@ -422,15 +427,28 @@ function memoriesRouter(collection) {
     res.json(await publicMem(req, mem));
   });
 
-  r.delete('/:id', async (req, res) => {
-    const mem = resolve(req).get(req.params.id);
+  r.post('/:id/restore', async (req, res) => {
+    const collection = resolve(req);
+    const mem = collection.get(req.params.id);
     if (!mem) return res.status(404).json({ error: 'not found' });
+    const restored = await collection.update(mem.id, { deletedAt: null });
+    res.json(await publicMem(req, restored));
+  });
+
+  r.delete('/:id', async (req, res) => {
+    const collection = resolve(req);
+    const mem = collection.get(req.params.id);
+    if (!mem) return res.status(404).json({ error: 'not found' });
+    if (req.query.permanent !== '1') {
+      const deletedAt = new Date().toISOString();
+      await collection.update(mem.id, { deletedAt });
+      return res.json({ ok: true, deletedAt });
+    }
     await fsp.unlink(path.join(req.vault.mediaDir, mem.filename)).catch(() => {});
     if (mem.motion && mem.motion.filename) await fsp.unlink(path.join(req.vault.mediaDir, mem.motion.filename)).catch(() => {});
     await fsp.unlink(path.join(req.vault.thumbDir, mem.id + '.jpg')).catch(() => {});
-    await resolve(req).remove(mem.id);
-    // 再保存一次让 .bak 前进到删除后的版本：被删照片的备注/标签/地点不应残留在回滚备份里
-    await resolve(req).store.save().catch(() => {});
+    await collection.remove(mem.id);
+    await collection.store.save().catch(() => {});
     res.json({ ok: true });
   });
 
