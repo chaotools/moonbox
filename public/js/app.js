@@ -78,6 +78,7 @@ async function boot() {
   if (store.data.ai) $('navAsk').hidden = !store.data.ai.configured;
   $('heroLunar').textContent = lunarDateText(new Date());
 
+  initNavMenus();
   initRouter();
   initGlobalSearch();
   initQuickNote();
@@ -329,16 +330,67 @@ function initRouter() {
   routerReady = true;
   router();
 }
+function closeNavMenus() {
+  document.querySelectorAll('#nav .nav-group').forEach((group) => {
+    group.classList.remove('open');
+    const btn = group.querySelector('.nav-group-btn');
+    const menu = group.querySelector('.nav-menu');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    if (menu) menu.hidden = true;
+  });
+}
+
+function initNavMenus() {
+  const groups = [...document.querySelectorAll('#nav .nav-group')];
+  const setOpen = (group, open) => {
+    group.classList.toggle('open', open);
+    const btn = group.querySelector('.nav-group-btn');
+    const menu = group.querySelector('.nav-menu');
+    if (btn) btn.setAttribute('aria-expanded', String(open));
+    if (menu) menu.hidden = !open;
+  };
+  groups.forEach((group) => {
+    const btn = group.querySelector('.nav-group-btn');
+    const menu = group.querySelector('.nav-menu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const next = menu.hidden;
+      closeNavMenus();
+      if (next) setOpen(group, true);
+    });
+    menu.addEventListener('click', (event) => {
+      if (event.target.closest('a')) closeNavMenus();
+    });
+    group.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeNavMenus();
+        btn.focus();
+      }
+    });
+  });
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('#nav .nav-group')) closeNavMenus();
+  });
+}
+
 function router() {
   const raw = location.hash.replace('#/', '') || 'today';
   const [routeName, query] = raw.split('?');
   const params = {};
   if (query) for (const [k, v] of new URLSearchParams(query)) params[k] = v;
-  const view = VIEWS[routeName] || timeline;
+  const view = VIEWS[routeName] || today;
   if (activeView && activeView !== view && typeof activeView.destroy === 'function') activeView.destroy();
   activeView = view;
   $('hero').hidden = view !== timeline;
-  const activeRoute = VIEWS[routeName] ? routeName : 'timeline';
+  const activeRoute = VIEWS[routeName] ? routeName : 'today';
+  const activeLink = document.querySelector(`#nav a[data-route="${activeRoute}"]`);
+  const activeGroup = activeLink ? activeLink.closest('.nav-group') : null;
+  document.querySelectorAll('#nav .nav-group').forEach((group) => {
+    group.classList.toggle('active', group === activeGroup);
+  });
+  closeNavMenus();
   document.querySelectorAll('#nav a').forEach((a) => {
     const active = a.dataset.route === activeRoute;
     a.classList.toggle('active', active);

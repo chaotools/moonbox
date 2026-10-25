@@ -65,17 +65,37 @@
   <!-- 模块导航 -->
   <nav class="nav" id="nav" aria-label="主要导航">
     <span class="nav-heading">浏览</span>
-    <a href="#/today" data-route="today">今天</a>
-    <a href="#/timeline" data-route="timeline">时间轴</a>
-    <a href="#/calendar" data-route="calendar">日历</a>
-    <a href="#/profile" data-route="profile">TA档案</a>
-    <a href="#/preferences" data-route="preferences">偏好</a>
-    <a href="#/people" data-route="people">人名</a>
-    <a href="#/events" data-route="events">大事记</a>
-    <a href="#/map" data-route="map">地图</a>
-    <a href="#/wishes" data-route="wishes">愿望&礼物</a>
-    <a href="#/stats" data-route="stats">统计</a>
-    <a href="#/ask" data-route="ask" id="navAsk" hidden>AI问答</a>
+    <div class="nav-group" data-nav-group="record">
+      <button type="button" class="nav-group-btn" aria-expanded="false" aria-haspopup="true">记录 <span class="nav-caret" aria-hidden="true"></span></button>
+      <div class="nav-menu" hidden>
+        <a href="#/today" data-route="today">今天</a>
+        <a href="#/timeline" data-route="timeline">时间轴</a>
+        <a href="#/calendar" data-route="calendar">日历</a>
+      </div>
+    </div>
+    <div class="nav-group" data-nav-group="relationship">
+      <button type="button" class="nav-group-btn" aria-expanded="false" aria-haspopup="true">关系 <span class="nav-caret" aria-hidden="true"></span></button>
+      <div class="nav-menu" hidden>
+        <a href="#/profile" data-route="profile">TA档案</a>
+        <a href="#/preferences" data-route="preferences">偏好</a>
+        <a href="#/people" data-route="people">人名</a>
+      </div>
+    </div>
+    <div class="nav-group" data-nav-group="plan">
+      <button type="button" class="nav-group-btn" aria-expanded="false" aria-haspopup="true">计划 <span class="nav-caret" aria-hidden="true"></span></button>
+      <div class="nav-menu" hidden>
+        <a href="#/events" data-route="events">大事记</a>
+        <a href="#/wishes" data-route="wishes">愿望&礼物</a>
+      </div>
+    </div>
+    <div class="nav-group" data-nav-group="insight">
+      <button type="button" class="nav-group-btn" aria-expanded="false" aria-haspopup="true">洞察 <span class="nav-caret" aria-hidden="true"></span></button>
+      <div class="nav-menu" hidden>
+        <a href="#/map" data-route="map">地图</a>
+        <a href="#/stats" data-route="stats">统计</a>
+        <a href="#/ask" data-route="ask" id="navAsk" hidden>AI问答</a>
+      </div>
+    </div>
   </nav>
 
   <div class="workspace">
