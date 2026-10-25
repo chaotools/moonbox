@@ -1540,3 +1540,24 @@ body::before { background: var(--bg); }
   .today-recent { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .today-recent-thumb { height: 92px; }
 }
+
+/* ===== 收藏、回收站与撤销 ===== */
+.card.favorite { box-shadow: 0 0 0 2px rgba(217,87,115,.28), var(--shadow-card); }
+.favorite-btn { position: absolute; top: 10px; right: 10px; z-index: 2; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; background: rgba(255,253,252,.82); color: var(--rose-deep); font-size: 17px; line-height: 1; cursor: pointer; backdrop-filter: blur(6px); }
+.favorite-btn:hover, .favorite-btn.active { background: var(--rose); border-color: var(--rose); color: #fff; }
+.album-chip.favorite-chip.active { border-color: var(--rose); background: var(--rose); color: #fff; }
+.album-chip.trash-chip { color: var(--muted); }
+.undo-bar { position: fixed; left: 50%; bottom: 26px; z-index: 80; display: flex; align-items: center; gap: 18px; min-width: 280px; padding: 12px 14px 12px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--ink); color: #fff; box-shadow: var(--shadow-lg); transform: translateX(-50%); animation: undo-in .2s ease; }
+.undo-bar span { flex: 1; font-size: 13px; }
+.undo-bar button { border: 0; border-radius: 8px; padding: 6px 10px; background: var(--rose); color: #fff; font-size: 12px; cursor: pointer; }
+@keyframes undo-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.trash-list { display: grid; gap: 9px; max-height: 55vh; overflow-y: auto; }
+.trash-row { display: flex; align-items: center; gap: 10px; padding: 9px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); }
+.trash-thumb { width: 48px; height: 48px; flex: 0 0 auto; border-radius: 8px; object-fit: cover; }
+.trash-copy { min-width: 0; flex: 1; }
+.trash-copy b { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.trash-copy span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.trash-actions { display: flex; gap: 3px; flex: 0 0 auto; }
+.trash-actions .ghost-btn { padding: 5px 7px; font-size: 10px; }
+.trash-actions .danger { color: var(--danger); }
+@media (max-width: 620px) { .undo-bar { right: 14px; left: 14px; min-width: 0; transform: none; } @keyframes undo-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } }

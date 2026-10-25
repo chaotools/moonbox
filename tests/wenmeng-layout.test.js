@@ -35,3 +35,11 @@ test('今天首页接入路由并包含旧日与随机回忆', () => {
   assert.match(today, /随机翻到这一页/);
   assert.match(today, /最近的记忆/);
 });
+
+test('时间轴接入收藏、回收站和删除撤销', () => {
+  const source = read('public/js/views/timeline.js');
+  assert.match(source, /class: 'favorite-btn'/);
+  assert.match(source, /filter\.favorite/);
+  assert.match(source, /async function openTrash\(\)/);
+  assert.match(source, /showUndo\('已移入回收站'/);
+});
