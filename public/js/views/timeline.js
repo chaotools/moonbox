@@ -430,6 +430,8 @@ function openUpload() {
   let pending = [];
   let objectUrls = [];
   let uploading = false;
+  let retryCount = 0;
+  let retryTimer = null;
   const uploadBtn = el('button', { class: 'primary-btn', text: '开始上传', disabled: true });
   const clearPreviews = () => {
     objectUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -445,6 +447,7 @@ function openUpload() {
   };
   const chooseFiles = (fileList) => {
     clearPreviews();
+    retryCount = 0;
     pending = Array.from(fileList).map((file) => ({ file, date: input({ type: 'datetime-local', step: '60' }) }));
     filesEl.innerHTML = '';
     filesEl.hidden = pending.length === 0;
@@ -484,29 +487,60 @@ function openUpload() {
   dz.addEventListener('drop', (e) => { if (!uploading && e.dataTransfer.files.length) chooseFiles(e.dataTransfer.files); });
   uploadBtn.addEventListener('click', () => uploadFiles());
 
-  function uploadFiles() {
+  function uploadFiles(isRetry = false) {
     if (!pending.length || uploading) return;
+    if (!isRetry) retryCount = 0;
     uploading = true;
     uploadBtn.disabled = true;
-    uploadBtn.textContent = '上传中…';
+    uploadBtn.textContent = isRetry ? '正在重试…' : '上传中…';
+    progress.hidden = false;
+    const barFill = document.getElementById('barFill');
+    const progressText = document.getElementById('progressText');
+    barFill.style.width = '0%';
+    progressText.textContent = isRetry ? `重试 ${retryCount}/2` : '0%';
+
     const fd = new FormData();
     for (const item of pending) {
       fd.append('files', item.file);
       fd.append('takenAt', item.date.value ? new Date(item.date.value).toISOString() : '');
     }
+
+    const failUpload = (message, canRetry = false) => {
+      uploading = false;
+      const present = uploadBtn.isConnected;
+      if (canRetry && retryCount < 2 && present) {
+        retryCount += 1;
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '正在重试…';
+        progressText.textContent = `网络波动，正在自动重试 ${retryCount}/2…`;
+        toast(`上传中断，正在自动重试 ${retryCount}/2`, 'err');
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          if (uploadBtn.isConnected) uploadFiles(true);
+        }, 1200 * retryCount);
+        return;
+      }
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = pending.length ? `重新上传 ${pending.length} 个文件` : '开始上传';
+      progressText.textContent = '失败，可重试';
+      if (present) toast('上传失败：' + message, 'err');
+    };
+
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/memories/upload');
-    progress.hidden = false;
+    xhr.timeout = 5 * 60_000;
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         const pct = Math.round((e.loaded / e.total) * 100);
-        document.getElementById('barFill').style.width = pct + '%';
-        document.getElementById('progressText').textContent = pct + '%';
+        barFill.style.width = pct + '%';
+        progressText.textContent = pct + '%';
       }
     };
     xhr.onload = async () => {
       if (xhr.status === 200) {
-        const data = JSON.parse(xhr.responseText);
+        let data;
+        try { data = JSON.parse(xhr.responseText); }
+        catch (e) { failUpload('返回数据无法解析', true); return; }
         // 若当前在看某个相册，新上传的照片自动归入该相册
         if (filter.album && filter.album !== 'all' && filter.album !== 'none') {
           for (const item of data.items) {
@@ -517,29 +551,23 @@ function openUpload() {
         for (const item of data.items) memories.push(item);
         memories.sort((a, b) => (b.takenAt || '').localeCompare(a.takenAt || ''));
         build(); renderFAB();
-        document.getElementById('progressText').textContent = '完成 ✓';
+        progressText.textContent = '完成 ✓';
         toast(`上传了 ${data.items.length} 段记忆 💕`);
         pending = [];
+        retryCount = 0;
         clearPreviews();
         setTimeout(() => md.close(), 700);
       } else {
-        uploading = false;
-        uploadBtn.disabled = false;
-        uploadBtn.textContent = pending.length ? `上传 ${pending.length} 个文件` : '开始上传';
-        document.getElementById('progressText').textContent = '失败';
-        const body = JSON.parse(xhr.responseText || '{}');
-        toast('上传失败：' + (body.error || '未知错误'), 'err');
+        let body = {};
+        try { body = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
+        failUpload(body.error || '未知错误', xhr.status === 0 || xhr.status >= 500);
       }
     };
-    xhr.onerror = () => {
-      uploading = false;
-      uploadBtn.disabled = false;
-      uploadBtn.textContent = pending.length ? `上传 ${pending.length} 个文件` : '开始上传';
-      document.getElementById('progressText').textContent = '失败';
-      toast('网络错误', 'err');
-    };
+    xhr.onerror = () => failUpload('网络错误', true);
+    xhr.ontimeout = () => failUpload('上传超时', true);
     xhr.send(fd);
   }
+
   function renderFAB() { /* FAB 在 build() 里已重建 */ }
 }
 
