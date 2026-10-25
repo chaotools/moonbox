@@ -197,12 +197,39 @@ async function renderBanners() {
 function initLogin() {
   let poll = null;
   let active = false;
+  const setCode = (code) => {
+    const digits = String(code || '').replace(/\D/g, '');
+    $('loginCode').textContent = digits ? `${digits.slice(0, 3)} ${digits.slice(3)}` : '------';
+    $('loginCodeCopy').disabled = !digits;
+    $('loginCodeCopy').dataset.code = digits;
+    $('loginCodePanel').hidden = !digits;
+  };
+  const copyCode = async () => {
+    const code = $('loginCodeCopy').dataset.code || '';
+    if (!code) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(code);
+      else {
+        const text = document.createElement('textarea');
+        text.value = code;
+        text.style.position = 'fixed';
+        text.style.opacity = '0';
+        document.body.append(text);
+        text.select();
+        document.execCommand('copy');
+        text.remove();
+      }
+      toast('登录码已复制');
+    } catch (e) { toast('复制失败，请手动记下登录码', 'err'); }
+  };
+  $('loginCodeCopy').addEventListener('click', copyCode);
   requestLogin = async () => {
     if (active) return;
     active = true;
     try {
       const login = await post('/api/auth/web-login/start', {});
       $('loginQr').src = login.qr;
+      setCode(login.code);
       $('loginErr').hidden = true;
       clearInterval(poll);
       poll = setInterval(async () => {
@@ -213,6 +240,7 @@ function initLogin() {
             poll = null;
             active = false;
             $('loginErr').hidden = false;
+            setCode('');
             return;
           }
           if (status.status !== 'claimed' || !status.ticket) return;
@@ -224,6 +252,7 @@ function initLogin() {
       }, 1800);
     } catch (e) {
       active = false;
+      setCode('');
       $('loginErr').hidden = false;
     }
   };

@@ -104,3 +104,32 @@ test('auth status exposes an opaque, stable per-user cache scope', async () => {
     else process.env.WEB_SESSION_SECRET = previous;
   }
 });
+
+test('web login start returns a phone login code while keeping the QR flow', async () => {
+  const previousBroker = process.env.AUTH_BROKER_URL;
+  const originalFetch = global.fetch;
+  const app = express();
+  app.use('/api/auth', router());
+  const server = await new Promise((resolve) => {
+    const value = app.listen(0, () => resolve(value));
+  });
+  try {
+    process.env.AUTH_BROKER_URL = 'https://broker.example/api/moonbox';
+    global.fetch = async () => new Response(JSON.stringify({
+      id: 'login-id', secret: 'secret-value', code: '123456', scanValue: 'moonbox-login:login-id:secret-value', expiresIn: 300
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const response = await originalFetch(`http://127.0.0.1:${server.address().port}/api/auth/web-login/start`, { method: 'POST' });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.code, '123456');
+    assert.equal(body.id, 'login-id');
+    assert.equal(body.secret, 'secret-value');
+    assert.equal(body.scanValue, undefined);
+    assert.match(body.qr, /^data:image\/png;base64,/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    global.fetch = originalFetch;
+    if (previousBroker === undefined) delete process.env.AUTH_BROKER_URL;
+    else process.env.AUTH_BROKER_URL = previousBroker;
+  }
+});

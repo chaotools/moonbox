@@ -24,9 +24,16 @@
     <div class="login-card">
       <div class="login-logo">💕</div>
       <h2>文梦集</h2>
-      <p class="login-sub">打开“超简单工具箱”小程序，在 文梦集 中点击“扫码登录网页版”</p>
-      <img id="loginQr" width="260" height="260" alt="文梦集 登录二维码">
-      <p class="login-err" id="loginErr" hidden>二维码已失效，请刷新页面重试。</p>
+      <p class="login-sub">电脑端可扫码，手机端请使用 6 位登录码</p>
+      <img id="loginQr" class="login-qr" width="260" height="260" alt="文梦集 登录二维码">
+      <div class="login-or"><span>或</span></div>
+      <div class="login-code-panel" id="loginCodePanel">
+        <div class="login-code-label">手机登录码</div>
+        <strong class="login-code" id="loginCode" aria-live="polite">------</strong>
+        <button type="button" class="ghost-btn login-code-copy" id="loginCodeCopy" disabled>复制登录码</button>
+        <p class="login-code-hint">在手机小程序「文梦集 → 我的 → 手机登录网页版」输入，5 分钟内有效</p>
+      </div>
+      <p class="login-err" id="loginErr" hidden>二维码或登录码已失效，请刷新页面重试。</p>
     </div>
   </div>
 

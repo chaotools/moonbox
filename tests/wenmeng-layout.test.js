@@ -63,3 +63,14 @@ test('一级导航按记录、关系、计划、洞察分组', () => {
   assert.match(app, /function initNavMenus\(\)/);
   assert.match(app, /group\.classList\.toggle\('active'/);
 });
+
+test('网页登录页提供手机登录码和复制入口', () => {
+  const html = read('public/index.html');
+  const app = read('public/js/app.js');
+  const css = read('public/style.css');
+  assert.match(html, /id="loginCode"/);
+  assert.match(html, /id="loginCodeCopy"/);
+  assert.match(app, /const setCode = \(code\) =>/);
+  assert.match(app, /navigator\.clipboard/);
+  assert.match(css, /\.login-code-panel/);
+});
