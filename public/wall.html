@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文梦集 · 照片墙</title>
+<link rel="stylesheet" href="/wall.css">
+<script type="module" src="/js/wall.js"></script>
+</head>
+<body>
+<div class="wall-shell" id="wallShell">
+  <aside class="wall-rail">
+    <div class="wall-brand"><div class="wall-brand-mark">文</div><div><div class="wall-brand-name">文梦集</div><div class="wall-brand-sub">PRIVATE MEMORY WALL</div></div></div>
+    <a class="wall-back" href="/">← 返回文梦集</a>
+    <h1 class="wall-heading">我们的<br><em>照片墙</em></h1>
+    <p class="wall-intro">照片不是按时间排的，是按心跳排的。把那些普通又舍不得忘记的瞬间，贴在一面会呼吸的墙上。</p>
+    <div class="wall-names" id="wallNames">文梦 · 文文 · 2026</div>
+    <div class="wall-stats"><div><b id="wallDays">--</b><span>在一起的日子</span></div><div><b id="wallCount">--</b><span>被收好的瞬间</span></div><div><b id="wallYears">--</b><span>年份</span></div></div>
+    <div class="wall-filters" id="wallFilters"><button class="wall-filter active" data-filter="all">全部 <em id="filterAllCount">0</em></button><button class="wall-filter" data-filter="favorite">收藏</button><button class="wall-filter" data-filter="live">实况</button><button class="wall-filter" data-filter="year">今年</button></div>
+    <div class="wall-rail-bottom"><button class="wall-play" id="wallPlay" disabled>▶ 播放回忆</button><a class="wall-upload" href="/#/timeline" target="_blank" rel="noopener">＋ 添加照片</a><div class="wall-rail-note">A LITTLE ARCHIVE OF ORDINARY DAYS<br>每一张照片，都是一句没有说完的话。</div></div>
+  </aside>
+  <main class="wall-stage" id="wallStage">
+    <div class="wall-toolbar"><span id="wallToolbar">ALL MEMORIES</span><span>MOVE YOUR MOUSE · FEEL THE MOMENTS</span></div>
+    <div class="wall-viewport" id="wallViewport"><div class="wall-canvas" id="wallCanvas"><div class="wall-loading">正在把照片贴到墙上…</div></div></div>
+    <div class="wall-foot"><span id="wallFoot">—</span><span>THE ORDINARY DAYS ARE THE STORY</span></div>
+  </main>
+</div>
+<div class="wall-gate" id="wallGate" hidden><div class="wall-gate-card"><div class="wall-gate-mark">文</div><h2>先登录文梦集</h2><p>照片墙会读取你们的私人记忆，请先在文梦集完成登录。</p><a href="/">返回文梦集登录 →</a></div></div>
+<div class="wall-viewer" id="wallViewer" hidden>
+  <div class="wall-viewer-top"><span id="viewerCount">01 / 00</span><button class="wall-close" id="viewerClose">×</button></div>
+  <div class="wall-viewer-stage"><button class="wall-nav prev" id="viewerPrev">‹</button><div class="wall-viewer-media" id="viewerMedia"></div><button class="wall-nav next" id="viewerNext">›</button></div>
+  <div class="wall-viewer-caption"><b id="viewerTitle"></b><span id="viewerMeta"></span><button id="viewerFav">♡ 收藏这个瞬间</button></div>
+</div>
+<div class="wall-movie" id="wallMovie" hidden>
+  <div class="wall-movie-media" id="movieMedia"></div>
+  <div class="wall-movie-top"><span>WENMENG · A LITTLE FILM</span><button class="wall-close" id="movieClose">×</button></div>
+  <div class="wall-movie-caption"><small id="movieDate"></small><b id="movieTitle"></b><span id="movieNote"></span></div>
+  <div class="wall-movie-bottom"><div class="wall-progress" id="movieProgress"></div><div class="wall-movie-controls"><span id="movieCounter">01 / 00</span><div><button id="movieToggle">暂停</button><button id="movieNext">下一张 ›</button></div></div></div>
+</div>
+<div class="wall-toast" id="wallToast"></div>
+</body>
+</html>
