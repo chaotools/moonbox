@@ -74,3 +74,16 @@ test('网页登录页提供手机登录码和复制入口', () => {
   assert.match(app, /navigator\.clipboard/);
   assert.match(css, /\.login-code-panel/);
 });
+
+test('照片墙通过按钮在新标签页打开', () => {
+  const html = read('public/index.html');
+  const wall = read('public/wall.html');
+  const js = read('public/js/wall.js');
+  const css = read('public/wall.css');
+  assert.match(html, /href="\/wall.html" target="_blank" rel="noopener"/);
+  assert.match(wall, /id="wallCanvas"/);
+  assert.match(wall, /id="wallMovie"/);
+  assert.match(js, /function openMovie\(\)/);
+  assert.match(js, /function openViewer\(index\)/);
+  assert.match(css, /\.wall-card/);
+});
