@@ -2,3 +2,12 @@ node_modules
 data
 *.log
 .git
+.gitignore
+.env
+.env.*
+deploy
+tests
+*.bak
+*.tmp
+*.enc
+npm-debug.log*

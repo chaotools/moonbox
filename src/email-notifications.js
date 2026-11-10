@@ -15,6 +15,7 @@ const DEFAULT_NOTIFICATIONS = Object.freeze({
 const DEFAULT_SENDER = 'chaotools2026@163.com';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const MAX_RECIPIENTS = 5;
 
 function parseRecipients(value) {
   const raw = Array.isArray(value) ? value.join(',') : String(value || '');
@@ -37,6 +38,9 @@ function validateNotificationSettings(value = {}) {
   const settings = normalizeNotificationSettings(value);
   if (settings.emailEnabled && !settings.emails.length) {
     return { ok: false, error: '开启邮件提醒时必须填写接收邮箱' };
+  }
+  if (settings.emails.length > MAX_RECIPIENTS) {
+    return { ok: false, error: `接收邮箱最多 ${MAX_RECIPIENTS} 个` };
   }
   if (settings.emails.some((email) => !EMAIL_PATTERN.test(email))) {
     return { ok: false, error: '接收邮箱格式不正确' };
@@ -156,6 +160,7 @@ async function runScheduledEmailDigests({ vaults, email, state, now = new Date()
   for (const entry of vaults || []) {
     const settings = normalizeNotificationSettings(entry.vault && entry.vault.config && entry.vault.config.data && entry.vault.config.data.notifications);
     if (!settings.emailEnabled || !settings.emails.length) continue;
+    if (settings.emails.length > MAX_RECIPIENTS) continue;
     if (settings.emails.some((address) => !EMAIL_PATTERN.test(address))) continue;
     const dueMinutes = minutesOf(settings.time);
     if (currentMinutes < dueMinutes || currentMinutes > dueMinutes + catchUpMinutes) continue;
