@@ -9,9 +9,9 @@ const { formatDate, shanghaiParts, TIME_ZONE } = require('./date-resolution');
 // 前后端共用同一份供应商配置，避免模型列表和默认地址漂移。
 const PROVIDERS = require('../public/js/ai-providers.json');
 
-function multiUserMode() {
-  return Boolean(process.env.WEB_SESSION_SECRET || process.env.MOONBOX_SERVICE_TOKEN);
-}
+// SSRF 防护不再以「是否多用户模式」为开关：本地单用户模式同样可能监听在
+// 0.0.0.0，且没有登录边界，用户可写的 ai.baseUrl 必须始终经过校验与 DNS 固定。
+// 需要访问本机/内网网关时，由管理员通过 AI_BASE_URL 环境变量统一配置。
 
 function sameOrigin(url, trusted) {
   try { return new URL(url).origin === new URL(trusted).origin; } catch { return false; }
@@ -136,13 +136,12 @@ function requestPinnedJson(endpoint, url, { method = 'POST', headers = {}, body,
   });
 }
 
-// 公开多用户服务不能让任意用户指定服务器要访问的地址，否则会形成 SSRF。
+// 任何模式都不能让用户把服务器变成访问内网的 SSRF 代理。
 // 管理员仍可通过 AI_BASE_URL 在服务器环境变量中设置受信任的专用网关。
 function validateUserAiSettings(ai = {}) {
   const provider = typeof ai.provider === 'string' ? ai.provider : 'zhipu';
   const preset = PROVIDERS[provider];
   const baseUrl = typeof ai.baseUrl === 'string' ? ai.baseUrl.trim() : '';
-  if (!multiUserMode()) return { ok: true };
   if (!preset) return { ok: false, error: '未知的 AI 供应商' };
   if (provider === 'custom') return parseCustomBaseUrl(baseUrl);
   if (baseUrl && (!baseUrl.startsWith('https://') || !sameOrigin(baseUrl, preset.baseUrl))) {
@@ -153,7 +152,7 @@ function validateUserAiSettings(ai = {}) {
 
 async function validateUserAiSettingsAsync(ai = {}) {
   const basic = validateUserAiSettings(ai);
-  if (!basic.ok || !multiUserMode() || ai.provider !== 'custom' || !ai.baseUrl) return basic;
+  if (!basic.ok || ai.provider !== 'custom' || !ai.baseUrl) return basic;
   return validateCustomEndpoint(ai.baseUrl);
 }
 
@@ -163,11 +162,11 @@ function resolveConfig(config) {
   const provider = ai.provider || 'zhipu';
   const preset = PROVIDERS[provider] || PROVIDERS.custom;
   const requestedBaseUrl = ai.baseUrl || preset.baseUrl || '';
-  const safeUserBaseUrl = multiUserMode()
-    ? provider === 'custom'
-      ? (parseCustomBaseUrl(requestedBaseUrl).normalized || '')
-      : ((!preset.baseUrl || !sameOrigin(requestedBaseUrl, preset.baseUrl)) ? preset.baseUrl : requestedBaseUrl)
-    : requestedBaseUrl;
+  // 无论哪种运行模式，用户可写的 baseUrl 都要经过白名单；环境变量 AI_BASE_URL
+  // 优先级最高且由管理员控制，不受此限制。
+  const safeUserBaseUrl = provider === 'custom'
+    ? (parseCustomBaseUrl(requestedBaseUrl).normalized || '')
+    : ((!preset.baseUrl || !sameOrigin(requestedBaseUrl, preset.baseUrl)) ? preset.baseUrl : requestedBaseUrl);
   return {
     provider,
     providerName: preset.name,
@@ -184,7 +183,7 @@ const isConfigured = (resolved) => Boolean(resolved.baseUrl && resolved.apiKey &
 // 否则保持旧行为返回文本字符串。
 async function chatCompletion(resolved, messages, { temperature = 0.7, timeoutMs = 90000, tools } = {}) {
   let customEndpoint = null;
-  if (multiUserMode() && !process.env.AI_BASE_URL && resolved.provider === 'custom' && resolved.baseUrl) {
+  if (!process.env.AI_BASE_URL && resolved.provider === 'custom' && resolved.baseUrl) {
     customEndpoint = await validateCustomEndpoint(resolved.baseUrl);
     if (!customEndpoint.ok) { const err = new Error(customEndpoint.error); err.status = 400; throw err; }
   }

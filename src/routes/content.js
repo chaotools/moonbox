@@ -250,6 +250,16 @@ const MAX_UPLOAD_REQUEST_SIZE = MAX_UPLOAD_BATCH_SIZE + 16 * 1024 * 1024;
 const uploadError = (message, status = 400) => Object.assign(new Error(message), { status });
 const kindForExt = (ext) => IMAGE_UPLOAD_EXT.has(ext) ? 'image' : (media.VIDEO_EXT.has(ext) ? 'video' : null);
 
+// 集合内容可能来自备份导入或手工编辑；任何用它拼出的文件系统路径都要再次确认
+// 仍落在目标目录内，避免历史/恶意记录把删除与读取操作带到目录之外。
+function safeVaultPath(dir, name) {
+  if (typeof dir !== 'string' || typeof name !== 'string' || !name || name.includes('\0')) return null;
+  if (name !== path.basename(name)) return null;
+  const root = path.resolve(dir);
+  const resolved = path.resolve(root, name);
+  return resolved.startsWith(root + path.sep) ? resolved : null;
+}
+
 function rejectOversizedUploadRequest(req, res, next) {
   const contentLength = Number(req.headers && req.headers['content-length']);
   if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_REQUEST_SIZE) {
@@ -270,9 +280,10 @@ function memoriesRouter(collection) {
 
   const publicMem = async (req, m) => {
     const url = '/media/' + encodeURIComponent(m.filename);
-    const thumbPath = path.join(req.vault.thumbDir, m.id + '.jpg');
+    const thumbPath = safeVaultPath(req.vault.thumbDir, String(m.id || '') + '.jpg');
     let thumb = null;
     try {
+      if (!thumbPath) throw new Error('invalid thumbnail path');
       await fsp.access(thumbPath);
       thumb = '/thumbs/' + encodeURIComponent(m.id) + '.jpg';
     } catch (e) {
@@ -444,9 +455,13 @@ function memoriesRouter(collection) {
       await collection.update(mem.id, { deletedAt });
       return res.json({ ok: true, deletedAt });
     }
-    await fsp.unlink(path.join(req.vault.mediaDir, mem.filename)).catch(() => {});
-    if (mem.motion && mem.motion.filename) await fsp.unlink(path.join(req.vault.mediaDir, mem.motion.filename)).catch(() => {});
-    await fsp.unlink(path.join(req.vault.thumbDir, mem.id + '.jpg')).catch(() => {});
+    const unlinkSafely = async (dir, name) => {
+      const target = safeVaultPath(dir, name);
+      if (target) await fsp.unlink(target).catch(() => {});
+    };
+    await unlinkSafely(req.vault.mediaDir, mem.filename);
+    if (mem.motion && mem.motion.filename) await unlinkSafely(req.vault.mediaDir, mem.motion.filename);
+    await unlinkSafely(req.vault.thumbDir, String(mem.id || '') + '.jpg');
     await collection.remove(mem.id);
     await collection.store.save().catch(() => {});
     res.json({ ok: true });
@@ -486,5 +501,6 @@ module.exports = {
   preferencesRouter, peopleRouter, eventsRouter, wishesRouter, giftsRouter, albumsRouter,
   profileRouter, memoriesRouter, ensureIndex, PROFILE_DEFAULT,
   PREF_POLARITIES, PREF_CATEGORIES, PEOPLE_GROUPS, EVENT_TYPES, WISH_STATUSES, WISH_PRIORITIES, GIFT_DIRECTIONS,
-  MAX_IMAGE_SIZE, MAX_VIDEO_SIZE, MAX_UPLOAD_FILES, MAX_UPLOAD_BATCH_SIZE, MAX_UPLOAD_REQUEST_SIZE, rejectOversizedUploadRequest
+  MAX_IMAGE_SIZE, MAX_VIDEO_SIZE, MAX_UPLOAD_FILES, MAX_UPLOAD_BATCH_SIZE, MAX_UPLOAD_REQUEST_SIZE,
+  rejectOversizedUploadRequest, safeVaultPath
 };

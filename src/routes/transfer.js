@@ -28,11 +28,39 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+// memories.json 的记录会被删除接口直接拼接进媒体/缩略图路径，因此不能只校验
+// filename：motion.filename 与 id 同样会进入 path.join，必须一并约束成扁平安全名。
+const SAFE_RECORD_ID = /^[A-Za-z0-9_-]{1,128}$/;
+const SAFE_MEDIA_FILENAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+const ALLOWED_IMPORT_MEDIA_EXT = new Set([...IMAGE_EXT, ...media.VIDEO_EXT, 'jpg', 'jpeg']);
+
+function isSafeMediaFilename(value) {
+  return typeof value === 'string'
+    && SAFE_MEDIA_FILENAME.test(value)
+    && ALLOWED_IMPORT_MEDIA_EXT.has(media.extOf(value));
+}
+
+function assertSafeImportedMemories(value) {
+  for (const memory of value) {
+    if (!SAFE_RECORD_ID.test(String(memory.id || ''))) {
+      throw new Error('备份包含非法的照片记录 id');
+    }
+    if (!isSafeMediaFilename(memory.filename)) {
+      throw new Error('备份包含非法的媒体文件名');
+    }
+    const motionName = memory.motion && memory.motion.filename;
+    if (motionName != null && !isSafeMediaFilename(motionName)) {
+      throw new Error('备份包含非法的动态照片文件名');
+    }
+  }
+}
+
 function validateBackupJson(name, value) {
   if (COLLECTION_JSON.has(name)) {
     if (!Array.isArray(value) || value.some((item) => !isPlainObject(item))) {
       throw new Error(`${name} 必须是由对象组成的数组`);
     }
+    if (name === 'memories.json') assertSafeImportedMemories(value);
     return;
   }
   if ((name === 'config.json' || name === 'profile.json') && !isPlainObject(value)) {
@@ -86,6 +114,21 @@ function mediaDestination(entryPath) {
     return { dir, name };
   }
   return null;
+}
+
+// 不信任 ZIP 头声明的 uncompressedSize：按实际解压出的字节数设上限，
+// 否则伪造的小尺寸声明可以让 entry.buffer() 把几百 MB 读进内存。
+async function readEntryLimited(entry, maxBytes) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of entry.stream()) {
+    total += chunk.length;
+    if (total > maxBytes) {
+      throw Object.assign(new Error(`${entry.path} 解压后超过允许上限`), { status: 413 });
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 async function streamEntryToFile(entry, target, maxBytes) {
@@ -184,7 +227,7 @@ function transferRouter(vaultResolver) {
       for (const name of jsonEntries) {
         const entry = entries.get(name);
         if (entrySize(entry) > MAX_JSON_BYTES) throw Object.assign(new Error(`${name} 超过 4 MB`), { status: 413 });
-        const value = JSON.parse((await entry.buffer()).toString('utf8'));
+        const value = JSON.parse(await readEntryLimited(entry, MAX_JSON_BYTES));
         validateBackupJson(name, value);
         // API Key 属于当前服务器秘密：备份中的 Key 一律丢弃，目标库已有 Key 则保留。
         if (name === 'config.json') {

@@ -56,6 +56,15 @@ const serveVaultDir = (key) => (req, res, next) => express.static(req.vault[key]
 
 // ---------- 应用 ----------
 const app = express();
+// 全局基线响应头：不限制脚本来源（首屏有内联主题脚本），但禁止被嵌套、
+// 禁止内容嗅探与 Referer 外泄，收敛点击劫持与信息泄露面。
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
+  next();
+});
 // 仅在明确配置时信任反向代理传来的协议头，避免直接暴露端口时信任伪造头。
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
 app.use(express.json({ limit: '4mb' }));
@@ -77,6 +86,10 @@ app.use('/api/wishes', content.wishesRouter((req) => req.vault.wishes));
 app.use('/api/gifts', content.giftsRouter((req) => req.vault.gifts));
 app.use('/api/albums', content.albumsRouter((req) => req.vault.albums));
 app.use('/api/search', searchRouter(getData));
+// 这两个接口代价高（真实调用大模型 / 打包整个媒体目录），单独限流，
+// 不能只依赖 /api 上按用户的通用写入限流。
+app.use('/api/ask/test', rateLimit({ windowMs: 10 * 60_000, max: 5, name: 'AI 连接测试' }));
+app.use('/api/transfer/export', rateLimit({ windowMs: 60 * 60_000, max: 8, name: '备份导出' }));
 app.use('/api/ask', askRouter((req) => req.vault.config, getData));
 app.use('/api/stats', statsRouter(getData));
 app.use('/api/calendar', calendarRouter(getData));
@@ -104,9 +117,12 @@ app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'inde
 // 统一错误出口：multer 文件校验失败等中间件错误也返回 JSON
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
-  console.error('请求处理失败:', err.message);
+  console.error('请求处理失败:', err);
   if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: '单个文件不能超过 ' + Math.round(content.MAX_VIDEO_SIZE / 1024 / 1024) + ' MB' });
-  res.status(err.status || 500).json({ error: err.message });
+  // 4xx 保留可读原因；5xx 不把内部路径或上游错误文本回显给客户端。
+  const status = Number.isInteger(err.status) ? err.status : 500;
+  if (status >= 500) return res.status(status).json({ error: '服务器内部错误' });
+  res.status(status).json({ error: err.message });
 });
 
 // ---------- 启动 ----------

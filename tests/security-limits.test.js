@@ -67,3 +67,31 @@ test('自定义 AI 请求固定使用已验证的 DNS 地址，不能在连接�
     /无法解析为公网地址/
   );
 });
+
+test('本地单用户模式同样拒绝内网 / 非 HTTPS 的自定义 AI 接口', async () => {
+  const keys = ['MOONBOX_SERVICE_TOKEN', 'WEB_SESSION_SECRET', 'AI_BASE_URL'];
+  const previous = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+  try {
+    for (const k of keys) delete process.env[k];
+    assert.equal(validateUserAiSettings({ provider: 'custom', baseUrl: 'http://127.0.0.1:11434/v1' }).ok, false);
+    assert.equal(validateUserAiSettings({ provider: 'custom', baseUrl: 'https://192.168.1.10/v1' }).ok, false);
+    assert.equal(validateUserAiSettings({ provider: 'openai', baseUrl: 'http://127.0.0.1:8080' }).ok, false);
+    assert.equal(
+      resolveConfig({ ai: { provider: 'custom', baseUrl: 'http://169.254.169.254/latest', apiKey: 'x', model: 'x' } }).baseUrl,
+      ''
+    );
+    assert.equal((await validateUserAiSettingsAsync({ provider: 'custom', baseUrl: 'https://127.0.0.1/v1' })).ok, false);
+
+    // 管理员通过环境变量配置的受信任网关仍然优先，不受用户配置校验影响。
+    process.env.AI_BASE_URL = 'http://127.0.0.1:11434/v1';
+    assert.equal(
+      resolveConfig({ ai: { provider: 'custom', baseUrl: 'http://169.254.169.254/latest', apiKey: 'x', model: 'x' } }).baseUrl,
+      'http://127.0.0.1:11434/v1'
+    );
+  } finally {
+    for (const k of keys) {
+      if (previous[k] === undefined) delete process.env[k];
+      else process.env[k] = previous[k];
+    }
+  }
+});
